@@ -1,5 +1,0 @@
-{
-  "name": "JSON Markdown Unescaper",
-  "description": "A dynamic tool to convert JSON-escaped strings into a readable Markdown preview and vice versa. It features a responsive layout that adapts for desktop and mobile use, with a directional indicator showing the flow of conversion.",
-  "requestFramePermissions": []
-}
