@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON → Markdown Unescaper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 16px;
+            gap: 16px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,188,212,0.1);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 500;
+            color: #00BCD4;
+            letter-spacing: 0.5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            background: #1a1a1a;
+            border: 1px solid #00BCD4;
+            color: #00BCD4;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,188,212,0.2);
+        }
+
+        .btn:hover {
+            background: #00BCD4;
+            color: #0a0a0a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,188,212,0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .markdown-toggle {
+            position: relative;
+            width: 54px;
+            height: 54px;
+            background: linear-gradient(180deg, #2d2d2d 0%, #1a1a1a 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: #00BCD4;
+            transition: all 0.15s ease;
+            box-shadow: 
+                0 6px 0 #0a0a0a,
+                0 8px 12px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.1),
+                0 0 0 2px #00BCD4,
+                0 0 20px rgba(0,188,212,0.3);
+            text-shadow: 0 0 10px rgba(0,188,212,0.5);
+        }
+
+        .markdown-toggle::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(0,188,212,0.2) 0%, transparent 100%);
+            border-radius: 8px 8px 0 0;
+            pointer-events: none;
+        }
+
+        .markdown-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 0 #0a0a0a,
+                0 10px 16px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.15),
+                0 0 0 2px #00E5FF,
+                0 0 30px rgba(0,188,212,0.5);
+            text-shadow: 0 0 15px rgba(0,188,212,0.8);
+        }
+
+        .markdown-toggle:active {
+            transform: translateY(4px);
+            box-shadow: 
+                0 2px 0 #0a0a0a,
+                0 4px 8px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.1),
+                0 0 0 2px #00BCD4,
+                0 0 15px rgba(0,188,212,0.3);
+        }
+
+        .markdown-toggle.active {
+            background: linear-gradient(180deg, #00E5FF 0%, #00BCD4 100%);
+            color: #0a0a0a;
+            box-shadow: 
+                0 6px 0 #006064,
+                0 8px 12px rgba(0,188,212,0.4),
+                inset 0 -2px 0 rgba(0,0,0,0.2),
+                inset 0 1px 0 rgba(255,255,255,0.3),
+                0 0 0 2px #00E5FF,
+                0 0 25px rgba(0,188,212,0.6);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .markdown-toggle.active:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 0 #006064,
+                0 10px 16px rgba(0,188,212,0.5),
+                inset 0 -2px 0 rgba(0,0,0,0.2),
+                inset 0 1px 0 rgba(255,255,255,0.4),
+                0 0 0 2px #00E5FF,
+                0 0 35px rgba(0,188,212,0.8);
+        }
+
+        .markdown-toggle.active:active {
+            transform: translateY(4px);
+            box-shadow: 
+                0 2px 0 #006064,
+                0 4px 8px rgba(0,188,212,0.4),
+                inset 0 -1px 0 rgba(0,0,0,0.2),
+                inset 0 1px 0 rgba(255,255,255,0.2),
+                0 0 0 2px #00E5FF,
+                0 0 20px rgba(0,188,212,0.6);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            gap: 16px;
+            overflow: hidden;
+        }
+
+        .box-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+        }
+
+        .box {
+            flex: 1;
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(0,188,212,0.15);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .box:hover {
+            box-shadow: 0 6px 24px rgba(0,188,212,0.25);
+            transform: translateY(-2px);
+        }
+
+        .box-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #aaaaaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        textarea, .preview {
+            flex: 1;
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            overflow-y: auto;
+        }
+
+        textarea::placeholder {
+            color: #555555;
+        }
+
+        .preview {
+            font-family: 'Roboto', sans-serif;
+            overflow-y: auto;
+        }
+
+        .preview h1, .preview h2, .preview h3, .preview h4, .preview h5, .preview h6 {
+            color: #00BCD4;
+            margin: 16px 0 8px 0;
+        }
+
+        .preview h1 { font-size: 28px; }
+        .preview h2 { font-size: 24px; }
+        .preview h3 { font-size: 20px; }
+
+        .preview p {
+            margin: 8px 0;
+        }
+
+        .preview code {
+            background: #2a2a2a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #00E5FF;
+        }
+
+        .preview pre {
+            background: #2a2a2a;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+
+        .preview pre code {
+            background: transparent;
+            padding: 0;
+            color: #e0e0e0;
+        }
+
+        .preview blockquote {
+            border-left: 4px solid #00BCD4;
+            padding-left: 16px;
+            margin: 12px 0;
+            color: #aaaaaa;
+            font-style: italic;
+        }
+
+        .preview ul, .preview ol {
+            margin: 8px 0 8px 24px;
+        }
+
+        .preview li {
+            margin: 4px 0;
+        }
+
+        .preview a {
+            color: #00BCD4;
+            text-decoration: none;
+        }
+
+        .preview a:hover {
+            text-decoration: underline;
+        }
+
+        .preview img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 12px 0;
+        }
+
+        .preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12px 0;
+        }
+
+        .preview th, .preview td {
+            border: 1px solid #333;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .preview th {
+            background: #2a2a2a;
+            color: #00BCD4;
+            font-weight: 500;
+        }
+
+        .preview hr {
+            border: none;
+            border-top: 2px solid #333;
+            margin: 20px 0;
+        }
+
+        .arrow-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .arrow {
+            width: 40px;
+            height: 40px;
+            background: #00BCD4;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0a0a0a;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,188,212,0.4);
+        }
+
+        .arrow:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,188,212,0.6);
+        }
+
+        .error {
+            color: #ff5252;
+            font-size: 12px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00BCD4;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00E5FF;
+        }
+
+        @media (max-width: 767px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .arrow {
+                transform: rotate(90deg);
+            }
+
+            .arrow.flipped {
+                transform: rotate(-90deg);
+            }
+
+            .box-wrapper {
+                min-height: 40vh;
+            }
+
+            .header h1 {
+                font-size: 16px;
+            }
+
+            .controls {
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .markdown-toggle {
+                width: 48px;
+                height: 48px;
+                font-size: 16px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .arrow.flipped {
+                transform: rotate(180deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>JSON → Markdown Unescaper</h1>
+            <div class="controls">
+                <div class="markdown-toggle" id="mdToggle" title="Toggle Markdown Preview">#M</div>
+                <button class="btn" id="refreshBtn">↻ Refresh</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="box-wrapper">
+                <div class="box">
+                    <div class="box-label" id="leftLabel">JSON Escaped String</div>
+                    <textarea id="leftInput" placeholder='Paste JSON-escaped text here...&#10;e.g., "Hello\\nWorld\\t**Bold**"'></textarea>
+                    <div class="error" id="leftError"></div>
+                </div>
+            </div>
+
+            <div class="arrow-container" id="arrowBtn">
+                <div class="arrow" id="arrow">→</div>
+            </div>
+
+            <div class="box-wrapper">
+                <div class="box">
+                    <div class="box-label" id="rightLabel">Unescaped Output</div>
+                    <textarea id="rightInput" placeholder="Result appears here..." style="display: block;"></textarea>
+                    <div class="preview" id="preview" style="display: none;"></div>
+                    <div class="error" id="rightError"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const leftInput = document.getElementById('leftInput');
+        const rightInput = document.getElementById('rightInput');
+        const preview = document.getElementById('preview');
+        const arrow = document.getElementById('arrow');
+        const arrowBtn = document.getElementById('arrowBtn');
+        const mdToggle = document.getElementById('mdToggle');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const leftError = document.getElementById('leftError');
+        const rightError = document.getElementById('rightError');
+        const leftLabel = document.getElementById('leftLabel');
+        const rightLabel = document.getElementById('rightLabel');
+
+        let isMarkdownMode = false;
+        let direction = 'right'; // 'right' or 'left'
+        let lastActiveInput = 'left';
+
+        function updateArrowDirection() {
+            const isMobile = window.innerWidth < 768;
+            if (direction === 'right') {
+                arrow.textContent = isMobile ? '↓' : '→';
+                arrow.classList.remove('flipped');
+            } else {
+                arrow.textContent = isMobile ? '↑' : '←';
+                arrow.classList.add('flipped');
+            }
+        }
+
+        function parseMarkdown(text) {
+            let html = text;
+
+            // Escape HTML
+            html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            // Horizontal rules (must come before other processing)
+            html = html.replace(/^[\s]*---[\s]*$/gm, '\n<HR_PLACEHOLDER>\n');
+            html = html.replace(/^[\s]*\*\*\*[\s]*$/gm, '\n<HR_PLACEHOLDER>\n');
+            html = html.replace(/^[\s]*___[\s]*$/gm, '\n<HR_PLACEHOLDER>\n');
+
+            // Code blocks
+            html = html.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
+
+            // Headers
+            html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
+            html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+            html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+            html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+
+            // Bold, Italic, Strikethrough (order matters!)
+            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+            html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Images
+            html = html.replace(/!\[([^\]]*)\]\(([^\)]+)\)/g, '<img src="$2" alt="$1">');
+
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+            // Blockquotes
+            html = html.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+            html = html.replace(/^&gt;(.+)$/gm, '<blockquote>$1</blockquote>');
+
+            // Lists
+            html = html.replace(/^\*\s+(.+)$/gm, '<ul><li>$1</li></ul>');
+            html = html.replace(/^-\s+(.+)$/gm, '<ul><li>$1</li></ul>');
+            html = html.replace(/^\+\s+(.+)$/gm, '<ul><li>$1</li></ul>');
+            html = html.replace(/^\d+\.\s+(.+)$/gm, '<ol><li>$1</li></ol>');
+
+            // Merge consecutive lists
+            html = html.replace(/<\/ul>\n<ul>/g, '');
+            html = html.replace(/<\/ol>\n<ol>/g, '');
+            html = html.replace(/<\/ul><ul>/g, '');
+            html = html.replace(/<\/ol><ol>/g, '');
+
+            // Tables
+            const tableRegex = /(?:^|\n)(\|.+\|(?:\n|$))+/g;
+            html = html.replace(tableRegex, (match) => {
+                const rows = match.trim().split('\n');
+                let table = '<table>';
+                let isFirstRow = true;
+                rows.forEach((row, i) => {
+                    // Skip separator rows
+                    if (row.match(/^\|[\s:-]+\|$/)) return;
+                    
+                    const cells = row.split('|').slice(1, -1); // Remove empty start/end
+                    if (cells.length === 0) return;
+                    
+                    const tag = isFirstRow ? 'th' : 'td';
+                    table += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
+                    
+                    if (isFirstRow && i < rows.length - 1 && rows[i + 1].match(/^\|[\s:-]+\|$/)) {
+                        isFirstRow = false;
+                    } else if (isFirstRow) {
+                        isFirstRow = false;
+                    }
+                });
+                table += '</table>';
+                return '\n' + table + '\n';
+            });
+
+            // Replace HR placeholders
+            html = html.replace(/<HR_PLACEHOLDER>/g, '<hr>');
+
+            // Paragraphs
+            html = html.replace(/\n\n+/g, '</p><p>');
+            html = '<p>' + html + '</p>';
+            
+            // Clean up empty paragraphs
+            html = html.replace(/<p><\/p>/g, '');
+            html = html.replace(/<p>\s*<\/p>/g, '');
+            
+            // Fix paragraph wrapping around block elements
+            html = html.replace(/<p>\s*(<h[1-6]>)/g, '$1');
+            html = html.replace(/(<\/h[1-6]>)\s*<\/p>/g, '$1');
+            html = html.replace(/<p>\s*(<(?:ul|ol|blockquote|pre|table|hr)>)/g, '$1');
+            html = html.replace(/(<\/(?:ul|ol|blockquote|pre|table|hr)>)\s*<\/p>/g, '$1');
+            html = html.replace(/<p>\s*(<hr>)/g, '$1');
+            html = html.replace(/(<hr>)\s*<\/p>/g, '$1');
+
+            // Line breaks (but not inside block elements)
+            html = html.replace(/\n/g, '<br>');
+            
+            // Clean up excessive breaks around block elements
+            html = html.replace(/<br>\s*(<(?:h[1-6]|ul|ol|blockquote|pre|table|hr)>)/g, '$1');
+            html = html.replace(/(<\/(?:h[1-6]|ul|ol|blockquote|pre|table|hr)>)\s*<br>/g, '$1');
+
+            return html;
+        }
+
+        function unescape(str) {
+            // Remove encapsulating quotes if present
+            let cleanStr = str.trim();
+            if ((cleanStr.startsWith('"') && cleanStr.endsWith('"')) ||
+                (cleanStr.startsWith("'") && cleanStr.endsWith("'"))) {
+                cleanStr = cleanStr.slice(1, -1);
+            }
+            
+            try {
+                return JSON.parse('"' + cleanStr.replace(/"/g, '\\"') + '"');
+            } catch (e) {
+                return cleanStr.replace(/\\n/g, '\n')
+                         .replace(/\\t/g, '\t')
+                         .replace(/\\r/g, '\r')
+                         .replace(/\\'/g, "'")
+                         .replace(/\\"/g, '"')
+                         .replace(/\\\\/g, '\\');
+            }
+        }
+
+        function escape(str) {
+            return str.replace(/\\/g, '\\\\')
+                     .replace(/\n/g, '\\n')
+                     .replace(/\t/g, '\\t')
+                     .replace(/\r/g, '\\r')
+                     .replace(/"/g, '\\"');
+        }
+
+        function convert() {
+            leftError.textContent = '';
+            rightError.textContent = '';
+
+            if (direction === 'right') {
+                try {
+                    const unescaped = unescape(leftInput.value);
+                    rightInput.value = unescaped;
+                    if (isMarkdownMode) {
+                        preview.innerHTML = parseMarkdown(unescaped);
+                    }
+                } catch (e) {
+                    leftError.textContent = 'Parse error: ' + e.message;
+                }
+            } else {
+                try {
+                    const escaped = escape(rightInput.value);
+                    leftInput.value = escaped;
+                } catch (e) {
+                    rightError.textContent = 'Error: ' + e.message;
+                }
+            }
+        }
+
+        leftInput.addEventListener('input', () => {
+            if (lastActiveInput !== 'left') {
+                direction = 'right';
+                updateArrowDirection();
+                lastActiveInput = 'left';
+            }
+            convert();
+        });
+
+        rightInput.addEventListener('input', () => {
+            if (lastActiveInput !== 'right') {
+                direction = 'left';
+                updateArrowDirection();
+                lastActiveInput = 'right';
+            }
+            convert();
+        });
+
+        leftInput.addEventListener('focus', () => {
+            lastActiveInput = 'left';
+            if (direction === 'left') {
+                direction = 'right';
+                updateArrowDirection();
+            }
+        });
+
+        rightInput.addEventListener('focus', () => {
+            lastActiveInput = 'right';
+            if (direction === 'right') {
+                direction = 'left';
+                updateArrowDirection();
+            }
+        });
+
+        arrowBtn.addEventListener('click', () => {
+            direction = direction === 'right' ? 'left' : 'right';
+            updateArrowDirection();
+            convert();
+        });
+
+        mdToggle.addEventListener('click', () => {
+            isMarkdownMode = !isMarkdownMode;
+            mdToggle.classList.toggle('active');
+            
+            if (isMarkdownMode) {
+                rightInput.style.display = 'none';
+                preview.style.display = 'block';
+                rightLabel.textContent = 'Markdown Preview';
+                preview.innerHTML = parseMarkdown(rightInput.value);
+            } else {
+                rightInput.style.display = 'block';
+                preview.style.display = 'none';
+                rightLabel.textContent = 'Unescaped Output';
+            }
+        });
+
+        refreshBtn.addEventListener('click', () => {
+            leftInput.value = '';
+            rightInput.value = '';
+            preview.innerHTML = '';
+            leftError.textContent = '';
+            rightError.textContent = '';
+            direction = 'right';
+            lastActiveInput = 'left';
+            isMarkdownMode = false;
+            mdToggle.classList.remove('active');
+            rightInput.style.display = 'block';
+            preview.style.display = 'none';
+            rightLabel.textContent = 'Unescaped Output';
+            updateArrowDirection();
+            leftInput.focus();
+        });
+
+        window.addEventListener('resize', updateArrowDirection);
+
+        // Initialize
+        updateArrowDirection();
+        leftInput.focus();
+    </script>
+</body>
+</html>
